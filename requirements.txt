@@ -1,0 +1,2 @@
+psycopg2==2.9.6 # PostgreSQL client
+mysql-connector-python==8.0.33 # MariaDB client

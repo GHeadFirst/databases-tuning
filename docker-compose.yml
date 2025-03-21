@@ -1,0 +1,47 @@
+version: '3.8'  # Docker Compose version
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  # Default port for PostgreSQL
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mariadbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"  # MariaDB uses a different port
+
+  app:
+    build: .
+    container_name: python_app
+    depends_on:
+      - postgres
+      - mariadb
+    volumes:
+      - .:/app
+    environment:
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: mydb
+    command: ["python", "script.py"]
+
+volumes:
+  pgdata:
+  mariadbdata:
