@@ -18,9 +18,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the scripts and dataset
 COPY . /app
 
-# Set execute permissions for entrypoint script
-RUN chmod +x /app/entrypoint.sh
-
-# Define the entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
-
+# Set the container to keep running
+CMD ["bash"]

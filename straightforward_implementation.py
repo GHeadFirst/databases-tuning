@@ -1,15 +1,8 @@
-from db_connection import get_postgres_connection, get_mariadb_connection
+# from db_connection import get_postgres_connection, get_mariadb_connection
 import re
 
 
 """ This is for referencing, since we can use the variables from the other file
-    postgres_conn = psycopg2.connect(
-        dbname="mydb",
-        user="user",
-        password="password",
-        host="postgres_db",
-        port=5432
-    )
     postgres_cursor = postgres_conn.cursor()
     postgres_cursor.execute("SELECT version();")
     postgres_version = postgres_cursor.fetchone()
