@@ -2,35 +2,19 @@ import re
 import time
 import csv
 from db_connection import get_postgres_connection, get_mariadb_connection
+from straightforward_implementation.py import parseDataAuth, parseDataPubl, openFile, create_table
 
-# Open file and read content
-def openFile(path):
-    try:
-        with open(path, 'r') as file:
-            return file.read()
-    except FileNotFoundError:
-        print(f"❌ Error: File '{path}' not found.")
-        return None
 
-content = openFile("dblp/auth.tsv")
-if content is None:
-    exit()
 
-# Remove empty entries
-content = list(filter(None, re.split(r'[\t\n]', content)))  
+# we read our files once then pass them to our parseData function to avoid reading them twice
+fileAuth = openFile("dblp/auth.tsv")
+filePubl = openFile("dblp/publ.tsv")
 
-# at first we used modulo to sort whether the element belong to myauthor or to mybook, if it was odd it was mybook, even then myauthor
-# now we changed it to using a for loop where it increments twice
-myauthor = []
-mybook = []
+if fileAuth:
+    myauthor, mybook = parseDataAuth(fileAuth)
 
-for i in range(0, len(content) - 1, 2):  
-    myauthor.append(content[i])
-    mybook.append(content[i + 1])
-
-# our author often had an extra element so incase that happens we add an unkown
-if len(myauthor) > len(mybook):
-    mybook.append("UNKNOWN")  
+if filePubl:
+    pubID, mytype, mytitle, mybooktitle, myyear, mypublisher = parseDataPubl(filePubl)
 
 print(f"✅ Length of myauthor: {len(myauthor)}") # to check the length of our authors
 print(f"✅ Length of mybook: {len(mybook)}")
@@ -41,12 +25,10 @@ data_to_insert = [(myauthor[i], mybook[i]) for i in range(len(myauthor))]
 conn_postgres = get_postgres_connection()
 cursor_postgres = conn_postgres.cursor()
 
-try:
-    cursor_postgres.execute("CREATE TABLE IF NOT EXISTS Auth (name VARCHAR(49), pubID VARCHAR(149));")
-    conn_postgres.commit()
-except Exception as e:
-    print(f"⚠️ Warning: {e}")
-    conn_postgres.rollback()
+create_table(cursor_postgres, "Auth", "name VARCHAR(49), pubID VARCHAR(149)", conn_postgres)
+
+create_table(cursor_postgres, "Publ", "pubID VARCHAR(129), type VARCHAR(13), title VARCHAR(700), booktitle VARCHAR(132), year VARCHAR(4), publisher VARCHAR(196)", conn_postgres)
+
 
 csv_file = "data_to_insert.csv"
 with open(csv_file, "w", newline="") as f:
