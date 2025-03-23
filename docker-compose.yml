@@ -40,7 +40,6 @@ services:
       DB_USER: user
       DB_PASSWORD: password
       DB_NAME: mydb
-    command: ["python", "script.py"]
 
 volumes:
   pgdata:

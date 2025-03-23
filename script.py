@@ -1,38 +1,21 @@
-import psycopg2
-import mysql.connector
+import sys
+from straightforward_implementation import run_straightforward
+from efficient_copy import run_copy
+from efficient_batch import run_batch
 
-# PostgreSQL Connection
-try:
-    postgres_conn = psycopg2.connect(
-        dbname="mydb",
-        user="user",
-        password="password",
-        host="postgres_db",
-        port=5432
-    )
-    postgres_cursor = postgres_conn.cursor()
-    postgres_cursor.execute("SELECT version();")
-    postgres_version = postgres_cursor.fetchone()
-    print(f"✅ Connected to PostgreSQL: {postgres_version[0]}")
-    postgres_cursor.close()
-    postgres_conn.close()
-except Exception as e:
-    print(f"❌ PostgreSQL Connection Error: {e}")
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python script.py [method]")
+        print("Methods: straightforward, copy, batch")
+        sys.exit(1)
 
-# MariaDB Connection
-try:
-    mariadb_conn = mysql.connector.connect(
-        host="mariadb_db",
-        user="user",
-        password="password",
-        database="mydb",
-        port=3306
-    )
-    mariadb_cursor = mariadb_conn.cursor()
-    mariadb_cursor.execute("SELECT VERSION();")
-    mariadb_version = mariadb_cursor.fetchone()
-    print(f"✅ Connected to MariaDB: {mariadb_version[0]}")
-    mariadb_cursor.close()
-    mariadb_conn.close()
-except Exception as e:
-    print(f"❌ MariaDB Connection Error: {e}")
+    method = sys.argv[1]
+
+    if method == "straightforward":
+        run_straightforward()
+    elif method == "copy":
+        run_copy()
+    elif method == "batch":
+        run_batch()
+    else:
+        print(f"Unknown method: {method}")
