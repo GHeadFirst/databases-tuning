@@ -17,8 +17,11 @@ print(cursor_mariadb.fetchone())
 
 cursor_postgres.execute("SELECT COUNT(*) FROM Auth;")
 row_count = cursor_postgres.fetchone()[0]  # Get the count result
+cursor_postgres.execute("SELECT COUNT(*) FROM Publ;")
+row_count_publ = cursor_postgres.fetchone()[0]  # Get the count result
 
 print(f"✅ Total records in Auth table: {row_count}")
+print(f"✅ Total records in Publ table: {row_count_publ}")
 
 
 cursor_postgres.close()
