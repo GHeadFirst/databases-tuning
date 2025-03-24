@@ -1,10 +1,14 @@
 import re
 import time
+import os
 from db_connection import get_postgres_connection, get_mariadb_connection  # ✅ Added PostgreSQL import
+
+base_dir = os.path.dirname(os.path.abspath(__file__)) 
 
 # Open file and read content
 def openFile(path):
     try:
+        full_path = os.path.join(base_dir, path)  # ✅ Correct usage
         with open(path, 'r') as file:
             return file.read()
     except FileNotFoundError:
@@ -65,8 +69,8 @@ def create_table(cursor, table_name, schema, conn):
         conn.rollback()  
 
 # we read our files once then pass them to our parseData function to avoid reading them twice
-fileAuth = openFile("dblp/auth.tsv")
-filePubl = openFile("dblp/publ.tsv")
+fileAuth = openFile(os.path.join(base_dir, "dblp", "auth.tsv") )
+filePubl = openFile(os.path.join(base_dir, "dblp", "publ.tsv") )
 
 if fileAuth:
     myauthor, mybook = parseDataAuth(fileAuth)
@@ -84,7 +88,7 @@ cursor_postgres = conn_postgres.cursor()
 create_table(cursor_postgres, "Auth", "name VARCHAR(49), pubID VARCHAR(149)", conn_postgres)
 create_table(cursor_postgres, "Publ", "pubID VARCHAR(129), type VARCHAR(13), title VARCHAR(700), booktitle VARCHAR(132), year VARCHAR(4), publisher VARCHAR(196)", conn_postgres)
 
-start_time = time.time()  # records the time needed, I had my laptop at performance mode and it took 🕒 inserted 3,095,201 records: 84.59 seconds
+start_time_postgres_auth = time.time()  # records the time needed, I had my laptop at performance mode and it took 🕒 inserted 3,095,201 records: 84.59 seconds
 
 # insert data into database for PostgreSQL
 for index in range(len(myauthor)):
@@ -94,14 +98,14 @@ for index in range(len(myauthor)):
 )
 
 conn_postgres.commit() # ✅ Saves everything to PostgreSQL
-end_time = time.time()  # ⏳ Stop timing
+end_time_postgres_auth = time.time()  # ⏳ Stop timing
 
-elapsed_time = end_time - start_time
-print(f"🕒 Time taken to insert {len(myauthor)} records: {elapsed_time:.2f} seconds for Auth table PostgreSQL") # 🕒 Time taken to insert 3095201 records: 84.59 seconds for Auth table PostgreSQL
+elapsed_time_postgres_auth = end_time_postgres_auth - start_time_postgres_auth
+print(f"🕒 Time taken to insert {len(myauthor)} records: {elapsed_time_postgres_auth:.2f} seconds for Auth table PostgreSQL") # 🕒 Time taken to insert 3095201 records: 84.59 seconds for Auth table PostgreSQL
 
 print(" in our test.py we have a test to see how many records got added")
 
-pubID_start = time.time()  
+start_time_postgres_publ = time.time()  
 # insert data for Publ in PostgreSQL
 for index in range(len(pubID)):
     print(f"📝 Inserting Row {index + 1}:")
@@ -113,10 +117,10 @@ for index in range(len(pubID)):
     )
 
 conn_postgres.commit() # ✅ Saves everything to PostgreSQL
-pubID_end = time.time()  # ⏳ Stop timing
+end_time_postgres_publ = time.time()  # ⏳ Stop timing
 
-elapsed_time = pubID_end - pubID_start
-print(f"🕒 Time taken to insert {len(pubID)} records: {elapsed_time:.2f} seconds for Publ table PostgreSQL") # Time taken to insert 1233214 records: 66.54 seconds for Publ table PostgreSQL
+elapsed_time_postgres_publ = end_time_postgres_publ - start_time_postgres_publ
+print(f"🕒 Time taken to insert {len(pubID)} records: {elapsed_time_postgres_publ:.2f} seconds for Publ table PostgreSQL") # Time taken to insert 1233214 records: 66.54 seconds for Publ table PostgreSQL
 
 print(" in our test.py we have a test to see how many records got added")
 
@@ -130,7 +134,7 @@ cursor_mariadb = conn_mariadb.cursor()
 create_table(cursor_mariadb, "Auth", "name VARCHAR(49), pubID VARCHAR(149)", conn_mariadb)
 create_table(cursor_mariadb, "Publ", "pubID VARCHAR(129), type VARCHAR(13), title VARCHAR(700), booktitle VARCHAR(132), year VARCHAR(4), publisher VARCHAR(196)", conn_mariadb)
 
-start_time = time.time()  
+start_time_mariadb_auth = time.time()  
 
 # insert data into database for MariaDB
 for index in range(len(myauthor)):
@@ -139,12 +143,12 @@ for index in range(len(myauthor)):
 )
 
 conn_mariadb.commit() # ✅ Saves everything to MariaDB
-end_time = time.time()  
+end_time_mariadb_auth = time.time()  
 
-elapsed_time = end_time - start_time
-print(f"🕒 Time taken to insert {len(myauthor)} records: {elapsed_time:.2f} seconds for Auth table MariaDB") # 🕒 Time taken to insert 3095201 records: 132.10 seconds for Auth table MariaDB
+elapsed_time_mariadb_auth = end_time_mariadb_auth - start_time_mariadb_auth
+print(f"🕒 Time taken to insert {len(myauthor)} records: {elapsed_time_mariadb_auth:.2f} seconds for Auth table MariaDB") # 🕒 Time taken to insert 3095201 records: 132.10 seconds for Auth table MariaDB
 
-pubID_start = time.time()  
+start_time_mariadb_publ = time.time()  
 # insert data for Publ in MariaDB
 for index in range(len(pubID)):
     print(f"📝 Inserting Row {index + 1}:")
@@ -156,9 +160,22 @@ for index in range(len(pubID)):
     )
 
 conn_mariadb.commit() # ✅ Saves everything to MariaDB
-pubID_end = time.time()  
+end_time_mariadb_publ = time.time()  
 
-elapsed_time = pubID_end - pubID_start
-print(f"🕒 Time taken to insert {len(pubID)} records: {elapsed_time:.2f} seconds for Publ table MariaDB") # Time taken to insert 1233214 records: 86.90 seconds for Publ table MariaDB
+elapsed_time_mariadb_publ = end_time_mariadb_publ - start_time_mariadb_publ
+print(f"🕒 Time taken to insert {len(pubID)} records: {elapsed_time_mariadb_publ:.2f} seconds for Publ table MariaDB") # Time taken to insert 1233214 records: 86.90 seconds for Publ table MariaDB
 
 print(" in our test.py we have a test to see how many records got added")
+
+print(f"Elapsed Time Postgres Auth Table: {elapsed_time_postgres_auth:.2f} seconds\n"
+      f"Elapsed Time Postgres Publ Table: {elapsed_time_postgres_publ:.2f} seconds\n"
+      f"Elapsed Time MariaDB Auth Table: {elapsed_time_mariadb_auth:.2f} seconds\n"
+      f"Elapsed Time MariaDB Publ Table: {elapsed_time_mariadb_publ:.2f} seconds")
+
+
+""" Elapsed Time Postgres Auth Table: 84.73 seconds
+Elapsed Time Postgres Publ Table: 65.60 seconds
+Elapsed Time MariaDB Auth Table: 120.69 seconds
+Elapsed Time MariaDB Publ Table: 81.10 seconds
+root@cab69331de81:/app# 
+ """
