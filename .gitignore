@@ -1,2 +1,4 @@
 personal-notes.md
 dblp/
+__pycache__/
+*.pyc
