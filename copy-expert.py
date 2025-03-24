@@ -42,22 +42,22 @@ conn_postgres = get_postgres_connection()
 cursor_postgres = conn_postgres.cursor()
 
 try:
-    cursor_postgres.execute("CREATE TABLE IF NOT EXISTS Auth (name VARCHAR(49), pubID VARCHAR(149));")
+    cursor_postgres.execute("CREATE TABLE IF NOT EXISTS Auth (name TEXT, pubID TEXT);")
     conn_postgres.commit()
 except Exception as e:
     print(f"⚠️ Warning: {e}")
     conn_postgres.rollback()
 
-csv_file = "data_to_insert.csv"
-with open(csv_file, "w", newline="") as f:
-    writer = csv.writer(f)
+tsv_file = "data_to_insert.tsv"
+with open(tsv_file, "w", newline="") as f:
+    writer = csv.writer(f, delimiter='\t')
     writer.writerows(data_to_insert)
 
 start_time = time.time()
 
-with open(csv_file, "r") as f:
+with open(tsv_file, "r") as f:
     try:
-        cursor_postgres.copy_expert("COPY Auth (name, pubID) FROM STDIN WITH CSV HEADER", f)
+        cursor_postgres.copy_expert("COPY Auth (name, pubID) FROM STDIN WITH DELIMITER E'\t'", f)
         print(f"✅ Successfully inserted batch {len(data_to_insert)} records into Auth table.")
     except Exception as e:
         print(f"⚠️ Error during Bulk-insert: {e}")
