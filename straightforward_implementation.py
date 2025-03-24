@@ -1,14 +1,14 @@
 import re
 import time
 import os
-from db_connection import get_postgres_connection, get_mariadb_connection  # ✅ Added PostgreSQL import
+from db_connection import get_postgres_connection, get_mariadb_connection  
 
 base_dir = os.path.dirname(os.path.abspath(__file__)) 
 
 # Open file and read content
 def openFile(path):
     try:
-        full_path = os.path.join(base_dir, path)  # ✅ Correct usage
+        full_path = os.path.join(base_dir, path)  # 
         with open(path, 'r') as file:
             return file.read()
     except FileNotFoundError:
@@ -26,17 +26,17 @@ def parseDataAuth(string):
     if len(myauthor) > len(mybook):
         mybook.append("UNKNOWN")
 
-    print(f"✅ Length of myauthor: {len(myauthor)}") # to check the length of our authors
+    print(f" Length of myauthor: {len(myauthor)}") # to check the length of our authors
     print(f"✅ Length of mybook: {len(mybook)}")
     return myauthor, mybook
 
 #  Publ(pubID(129),type(13),title(700),booktitle(132),year(4),publisher(196))
 def parseDataPubl(string):
-    lines = string.splitlines()  # ✅ Split into rows
+    lines = string.splitlines()  # Split into rows
     pubID, mytype, mytitle, mybooktitle, myyear, mypublisher = [], [], [], [], [], []
     
     for line in lines:
-        fields = line.split("\t")  # ✅ Split by tab (since it's TSV)
+        fields = line.split("\t")  # Split by tab (since it's TSV)
         
         if len(fields) != 6:  # ✅ Ensure each row has exactly 6 columns
             print(f"⚠️ Skipping malformed row: {fields}")
@@ -97,7 +97,7 @@ for index in range(len(myauthor)):
     # normal .format or string literals but it can break the code in case of O'Reiley, which by the fourth row I think there was a case of
 )
 
-conn_postgres.commit() # ✅ Saves everything to PostgreSQL
+conn_postgres.commit() # Saves everything to PostgreSQL
 end_time_postgres_auth = time.time()  # ⏳ Stop timing
 
 elapsed_time_postgres_auth = end_time_postgres_auth - start_time_postgres_auth
@@ -116,7 +116,7 @@ for index in range(len(pubID)):
          mybooktitle[index].strip(), myyear[index].strip(), mypublisher[index].strip()) # here we use paremetized queries to prevent SQL injections
     )
 
-conn_postgres.commit() # ✅ Saves everything to PostgreSQL
+conn_postgres.commit() #  Saves everything to PostgreSQL
 end_time_postgres_publ = time.time()  # ⏳ Stop timing
 
 elapsed_time_postgres_publ = end_time_postgres_publ - start_time_postgres_publ
@@ -142,7 +142,7 @@ for index in range(len(myauthor)):
     "INSERT INTO Auth VALUES (%s, %s)", (myauthor[index], mybook[index])
 )
 
-conn_mariadb.commit() # ✅ Saves everything to MariaDB
+conn_mariadb.commit() #  Saves everything to MariaDB
 end_time_mariadb_auth = time.time()  
 
 elapsed_time_mariadb_auth = end_time_mariadb_auth - start_time_mariadb_auth
@@ -159,7 +159,7 @@ for index in range(len(pubID)):
          mybooktitle[index].strip(), myyear[index].strip(), mypublisher[index].strip())
     )
 
-conn_mariadb.commit() # ✅ Saves everything to MariaDB
+conn_mariadb.commit() #  Saves everything to MariaDB
 end_time_mariadb_publ = time.time()  
 
 elapsed_time_mariadb_publ = end_time_mariadb_publ - start_time_mariadb_publ
@@ -179,3 +179,6 @@ Elapsed Time MariaDB Auth Table: 120.69 seconds
 Elapsed Time MariaDB Publ Table: 81.10 seconds
 root@cab69331de81:/app# 
  """
+
+if __name__ == "__main__":
+    run_straightforward_approach() 
