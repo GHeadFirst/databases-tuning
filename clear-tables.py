@@ -3,8 +3,7 @@ import mysql.connector
 from db_connection import get_postgres_connection, get_mariadb_connection
 
 def clear_postgres():
-    conn = get_postgres_connection()
-    cursor = conn.cursor()
+    conn, cursor = get_postgres_connection()
 
     # Get existing tables
     cursor.execute("""
@@ -23,8 +22,7 @@ def clear_postgres():
     conn.close()
 
 def clear_mariadb():
-    conn = get_mariadb_connection()
-    cursor = conn.cursor()
+    conn, cursor = get_mariadb_connection()
 
     # Get existing tables
     cursor.execute("""

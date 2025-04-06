@@ -11,7 +11,8 @@ def get_postgres_connection():
             host="postgres_db",  
             port=5432
         )
-        return conn
+        cursor = conn.cursor()
+        return conn, cursor
     except Exception as e:
         print(f"❌ PostgreSQL Connection Error: {e}")
         return None
@@ -26,7 +27,8 @@ def get_mariadb_connection():
             database="mydb",
             port=3306
         )
-        return conn
+         cursor = conn.cursor()
+        return conn, cursor
     except Exception as e:
         print(f"❌ MariaDB Connection Error: {e}")
         return None
