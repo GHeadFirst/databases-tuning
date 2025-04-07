@@ -2,11 +2,11 @@ import uuid
 import random
 import time
 from random import shuffle, randint
-
-from db_connection import get_postgres_connection, get_mariadb_connection
+# from db_connection import get_postgres_connection, get_mariadb_connection
 
 number_of_employees = 100000
-numer_of_worker_students = number_of_employees * 0.05 # because I want it so that 5% of students work
+number_of_tech_employees = int(number_of_employees * 0.1)
+number_of_worker_students = int(number_of_employees * 0.05)  # because I want it so that 5% of students work
 number_of_students  = 100000 - number_of_worker_students
 numer_of_tech_dept  = 10
 
@@ -27,13 +27,14 @@ last_names = ["Schäler", "Khalifa", "Albakri", "Hosseini", "Hofmann", "Kondmann
 
 all_ids = []
 def generate_unique_ids():
+    global all_ids
     all_ids = list(range(100000,1000000))
     shuffle(all_ids)
     
 generate_unique_ids()
 
 # Employee(ssnum,name,manager,dept,salary,numfriends)
-employee_table = [all_ids.pop()+"\tMartin Schäler\tN/A\tCEO\t1000000\t150"]
+employee_table = [f"{all_ids.pop()}\tMartin Schäler\tN/A\tCEO\t1000000\t150"]
 
 # Student(ssnum,name,course,grade)
 student_table = []
@@ -47,12 +48,15 @@ tech_managers = []
 
 
 current_department = 0
-def make_manager(): # we can delegate here to call the make_employee method instead of directly adding to employee array
-    manager_name = first_names[randint(0,len(first_names) - 1)] + " " + last_names[randint(0,len(last_names) - 1)]
+def make_manager():
+    manager_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
     manager_dept = departments[current_department]
-    manager_string = all_ids.pop() + "\t" + manager_name + "\t" + "Martin Schäler" + "\t" + manager_dept + "\t" + randint(120000,200000) + "\t" + randint(0,5)
+    
+    manager_string = f"{all_ids.pop()}\t{manager_name}\tMartin Schäler\t{manager_dept}\t{randint(120000, 200000)}\t{randint(0, 5)}"
     employee_table.append(manager_string + "\n")
-    return  manager_name, manager_dept 
+    
+    return manager_name, manager_dept
+
 
 def make_employee(manager, dept, id=None, name=None, salary=None, numfriends=None):
     if id is None:
@@ -67,24 +71,30 @@ def make_employee(manager, dept, id=None, name=None, salary=None, numfriends=Non
     employee_string = f"{id}\t{name}\t{manager}\t{dept}\t{salary}\t{numfriends}"
     employee_table.append(employee_string + "\n")
 
-def make_student_employee():
+def make_student_employee(manager, dept):
     student_employee_id = all_ids.pop()
-    student_employee_name = first_names[randint(0,len(first_names) - 1)] + " " + last_names[randint(0,len(last_names) - 1)]
-    student_employee_manager = manager_name
-    student_employee_dept = departments[current_department]
-    student_employee_salary = randint(20000,50000)
-    student_employee_numfriends = randint(100,150)
-    student_employee_course = courses[randint(0,len(courses) - 1)]
-    student_employee_grade = round(random.uniform(1.0,4.0),1)
-    make_employee(student_employee_id, student_employee_name, student_employee_manager, student_employee_dept, student_employee_salary, student_employee_numfriends)
+    student_employee_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+    student_employee_salary = randint(20000, 50000)
+    student_employee_numfriends = randint(100, 150)
+    student_employee_course = courses[randint(0, len(courses) - 1)]
+    student_employee_grade = round(random.uniform(1.0, 4.0), 1)
+
     make_employee(
-        manager=student_employee_manager,
-        dept=student_employee_dept,
+        manager=manager,
+        dept=dept,
         id=student_employee_id,
         name=student_employee_name,
         salary=student_employee_salary,
         numfriends=student_employee_numfriends
     )
+
+    make_student(
+        id=student_employee_id,
+        name=student_employee_name,
+        course=student_employee_course,
+        grade=student_employee_grade
+    )
+
 
 def make_student(id = None, name = None, course = None, grade = None):
     if (id is None or name is None or course is None or grade is None):
@@ -112,32 +122,33 @@ def make_techdept():
 # ssnum, name firstname[random(i)] lastname[random], manager 
 # for a unique id 6 digits should be enough for 200k people
 def generate_record():
+    current_department = 0
+    manager_name, manager_dept = make_manager()
+    tech_managers.append(manager_name)
+    tech_dept.append(manager_dept)
     employees_without_managers = number_of_employees # We can just skip the index after making the manager so we do employee += 1 I think
-    non_tech_employees = employees_without_managers * 0.1
-    for employee in range(non_tech_employees):
-        while (employee < 10000): # 0.1 because only 10% need to be in a technical department
-                if (employee % 1000 == 0) # I can change this condition if I want a manager to be the manager for two dept for example
-                    manager_name = make_manager() # everytime a manager is made we need to put the manager name in an array and with the dept name
+    non_tech_employees = number_of_employees - number_of_tech_employees
+    non_tech_dept_size = int(non_tech_employees / (len(departments) - 10))
+    for employee in range(number_of_tech_employees):
+        if (employee % 1000 == 0 and employee != 0): # I can change this condition if I want a manager to be the manager for two dept for example
+                    current_department += 1
+                    manager_name, manager_dept = make_manager() # everytime a manager is made we need to put the manager name in an array and with the dept name
                     tech_managers.append(manager_name)
                     tech_dept.append(manager_dept)
-                    if (employee != 0)
-                        current_department += 1
-                if (employee % 20 == 0 ) # for every 20 employees we get a student employee
-                    make_student_employee()
-                    employee += 1
-                    continue
-            make_employee()
-            employee += 1
-        
-        if (employee % 1000 == 0)
-            manager_name = make_manager()  # everytime a manager is made we need to put the manager name in an array and with the dept name
-            if (employee != 0)
-                current_department += 1
-        if (employee % 20 == 0)
-            make_student_employee()
-        make_employee()
+        if (employee % 20 == 0 and employee < number_of_worker_students ): # for every 20 employees we get a student employee
+            make_student_employee(manager_name, manager_dept)
+            continue
+        make_employee(manager_name, manager_dept)
+    for employee in range(non_tech_employees):
+        if (employee % non_tech_dept_size == 0):
+            manager_name, manager_dept = make_manager()  # everytime a manager is made we need to put the manager name in an array and with the dept name
+            current_department += 1
+        if (employee % 20 == 0):
+            make_student_employee(manager_name, manager_dept)
+            continue
+        make_employee(manager_name, manager_dept)
     
-    for student in range(number_of_students):
+    for student in range(number_of_students - (number_of_students * 0.05)):
         make_student()
 
 make_techdept()
