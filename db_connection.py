@@ -25,9 +25,10 @@ def get_mariadb_connection():
             user="user",
             password="password",
             database="mydb",
-            port=3306
+            port=3306,
+            allow_local_infile=True  # Enable local infile
         )
-         cursor = conn.cursor()
+        cursor = conn.cursor()
         return conn, cursor
     except Exception as e:
         print(f"❌ MariaDB Connection Error: {e}")

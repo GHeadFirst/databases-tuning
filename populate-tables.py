@@ -3,14 +3,52 @@ import random
 import time
 import os
 from random import shuffle, randint
-from create-table import create_table
+# from create_table import create_table
 from db_connection import get_postgres_connection, get_mariadb_connection
 
+
+def create_table(cursor, table_name, schema, conn):
+    try:
+        sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({schema});"
+        cursor.execute(sql)
+        conn.commit()
+        print(f"✅(Success) Table {table_name} was created with the following schema:\n --> {schema}")
+    except Exception as e:
+        print(f"⚠️(Warning): {e}")
+        conn.rollback()
+
 # Setup of our connections and cursors
-conn_postgres, cursor_postgres = get_postgres_connection
-conn_mariadb, cursor_mariadb = get_mariadb_connection
+conn_postgres, cursor_postgres = get_postgres_connection()
+conn_mariadb, cursor_mariadb = get_mariadb_connection()
+
+# Some definitions for later
+table_employee_spec = "ssnum, name, manager , dept, salary, numfriends"
+table_student_spec = "ssnum, name, course, grade"
+table_techdept_spec = "dept, manager, location"
+
+
 
 # Table creation
+table_employee_name = "Employee"
+table_employee_schema = "ssnum INT PRIMARY KEY, name VARCHAR(120), manager VARCHAR(120), dept VARCHAR(100), salary INT, numfriends INT"
+
+table_student_name = "Student"
+table_student_schema = "ssnum INT PRIMARY KEY, name VARCHAR(120), course VARCHAR(100), grade FLOAT"
+
+table_techdept_name = "Techdept"
+table_techdept_schema = "dept VARCHAR(100), manager VARCHAR(120), location VARCHAR(70)"
+
+# Table creation PostgreSQL
+create_table(cursor_postgres,table_employee_name, table_employee_schema, conn_postgres)
+create_table(cursor_postgres,table_student_name, table_student_schema, conn_postgres)
+create_table(cursor_postgres,table_techdept_name, table_techdept_schema, conn_postgres)
+
+# Table creation MariaDB
+create_table(cursor_mariadb,table_employee_name, table_employee_schema, conn_mariadb)
+create_table(cursor_mariadb,table_student_name, table_student_schema, conn_mariadb)
+create_table(cursor_mariadb,table_techdept_name, table_techdept_schema, conn_mariadb)
+
+
 
 #  Base directory for cross-platform path handling
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -188,34 +226,49 @@ def generate_tsv_file():
     with open("assignment-2/techdept.tsv", "w") as f:
         f.writelines(tech_dept_table)
 
-def bulk_insert_postgres(file_path, table_name,table_spec):
+def bulk_insert_postgres(file_path, table_name, table_spec):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            copy_sql = f"COPY {table_name} {table_spec} FROM STDIN WITH (FORMAT TEXT, DELIMITER E'\t')"
+            # Ensure the column list is in parentheses.
+            copy_sql = f"COPY {table_name} ({table_spec}) FROM STDIN WITH (FORMAT TEXT, DELIMITER E'\t')"
             cursor_postgres.copy_expert(copy_sql, f)
         conn_postgres.commit()
-        print(f"Successfully inserted data into {table_spec} (PostgreSQL).")
+        print(f"Successfully inserted data into {table_name} (columns: {table_spec}) (PostgreSQL).")
     except Exception as e:
-        print(f"⚠️ Error inserting into {table_spec} (PostgreSQL): {e}")
+        print(f"⚠️ Error inserting into {table_name} (PostgreSQL): {e}")
         conn_postgres.rollback()
 
 
-def bulk_insert_mariadb(file_path, table_name , table_spec):
+
+def bulk_insert_mariadb(file_path, table_name, table_spec):
     try:
-        load_data_sql = (f"LOAD DATA LOCAL INFILE '{}' INTO TABLE {table_name} "
-            "FIELDS TERMINATED BY '\t' "
-            "LINES TERMINATED BY '\n'".format(file_path, table_spec)
+        load_data_sql = (
+            f"LOAD DATA LOCAL INFILE '{file_path}' INTO TABLE {table_name} "
+            f"FIELDS TERMINATED BY '\\t' "
+            f"LINES TERMINATED BY '\\n' "
+            f"({table_spec})"
         )
         cursor_mariadb.execute(load_data_sql)
         conn_mariadb.commit()
-        print(f"Successfully inserted data into {table_spec} (MariaDB).")
+        print(f"Successfully inserted data into {table_name} (columns: {table_spec}) (MariaDB).")
     except Exception as e:
-        print(f"⚠️ Error inserting into {table_spec} with table name {table_name} (MariaDB): {e}")
+        print(f"⚠️ Error inserting into {table_name} (MariaDB): {e}")
         conn_mariadb.rollback()
+
 
 
 if __name__ == "__main__":
     generate_record()
     make_techdept()
     generate_tsv_file()
-    bulk_insert_postgres(employee_tsv_path,)
+    # expert copy into PostgreSQL
+    bulk_insert_postgres(employee_tsv_path, table_employee_name, table_employee_spec)
+    bulk_insert_postgres(student_tsv_path, table_student_name, table_student_spec)
+    bulk_insert_postgres(techdept_tsv_path, table_techdept_name, table_techdept_spec)
+
+    # loading into MariaDB
+    bulk_insert_mariadb(employee_tsv_path, table_employee_name, table_employee_spec)
+    bulk_insert_mariadb(student_tsv_path, table_student_name, table_student_spec)
+    bulk_insert_mariadb(techdept_tsv_path, table_techdept_name, table_techdept_spec)
+
+
