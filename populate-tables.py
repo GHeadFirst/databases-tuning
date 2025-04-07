@@ -1,8 +1,23 @@
 import uuid
 import random
 import time
+import os
 from random import shuffle, randint
-# from db_connection import get_postgres_connection, get_mariadb_connection
+from create-table import create_table
+from db_connection import get_postgres_connection, get_mariadb_connection
+
+# Setup of our connections and cursors
+conn_postgres, cursor_postgres = get_postgres_connection
+conn_mariadb, cursor_mariadb = get_mariadb_connection
+
+# Table creation
+
+#  Base directory for cross-platform path handling
+base_dir = os.path.dirname(os.path.abspath(__file__))
+employee_tsv_path = os.path.join(base_dir, "assignment-2", "employee.tsv")
+student_tsv_path = os.path.join(base_dir, "assignment-2", "student.tsv")
+techdept_tsv_path = os.path.join(base_dir, "assignment-2", "techdept.tsv")
+
 
 number_of_employees = 100000
 number_of_tech_employees = int(number_of_employees * 0.1)
@@ -18,37 +33,54 @@ courses = ["COMP101, Intro to Computing", "ENVS202, Climate Change Policy", "ART
 
 unmanaged_tech_dept = ["Software Development", "IT Support / Help Desk", "Network Engineering", "Cybersecurity", "Data Science", "DevOps", "Quality Assurance (QA)", "Cloud Engineering", "Artificial Intelligence", "Database Administration"]
 
-
-first_names = ["Kais", "Fares", "Adnan", "Martin", "Max", "Moritz", "Amreen", "Amsal", "Mostafa", "Zoha", "Manizheh","Bennett", "Sullivan", "Carter", "Hayes", "Mitchell", "Brooks", "Reed", "Cooper", "Bryant", "Parker", "Lawson", "Dean", "Ward", "Andrews", "Pierce", "Grant", "Palmer", "Blake", "Maxwell", "Rhodes", "Foster", "Vaughn", "Jennings", "Barrett", "Walsh", "Malone", "Franklin", "Bishop", "Lane", "Doyle", "Chandler", "Sutton", "Sinclair", "Pratt", "Steele", "Benson", "Ramsey", "Harmon", "Holt", "Ford", "Violet", "Nathan", "Stella", "Owen", "Hazel", "Leo", "Aurora", "Miles", "Naomi", "Eli", "Claire", "Asher", "Savannah", "Hudson", "Lucy", "Isaiah", "Bella", "Hunter", "Camila", "Xavier", "Jeff"
+first_names = [
+    "Kais", "Fares", "Adnan", "Martin", "Max", "Moritz", "Amreen", "Amsal", "Mostafa", "Zoha", "Manizheh",
+    "Bennett", "Sullivan", "Carter", "Hayes", "Mitchell", "Brooks", "Reed", "Cooper", "Bryant",
+    "Parker", "Lawson", "Dean", "Ward", "Andrews", "Pierce", "Grant", "Palmer", "Blake", "Maxwell",
+    "Rhodes", "Foster", "Vaughn", "Jennings", "Barrett", "Walsh", "Malone", "Franklin", "Bishop", "Lane",
+    "Doyle", "Chandler", "Sutton", "Sinclair", "Pratt", "Steele", "Benson", "Ramsey", "Harmon", "Holt",
+    "Ford", "Violet", "Nathan", "Stella", "Owen", "Hazel", "Leo", "Aurora", "Miles", "Naomi", "Eli",
+    "Claire", "Asher", "Savannah", "Hudson", "Lucy", "Isaiah", "Bella", "Hunter", "Camila", "Xavier", "Jeff",
+    "Eliana", "Luca", "Sienna", "Mateo", "Layla", "Ezra", "Isla", "Julian", "Nova", "Zion",
+    "Aaliyah", "Theo", "Maya", "Enzo", "Ruby", "Aria", "Caleb", "Freya", "Kai", "Leilani"
 ]
 
-last_names = ["Schäler", "Khalifa", "Albakri", "Hosseini", "Hofmann", "Kondmann", "Memic", "Schneider", "Schmidt", "Bennett", "Sullivan", "Carter", "Hayes", "Mitchell", "Brooks", "Reed", "Cooper", "Bryant", "Parker", "Lawson", "Dean", "Ward", "Andrews", "Pierce", "Grant", "Palmer", "Blake", "Maxwell", "Rhodes", "Foster", "Vaughn", "Jennings", "Barrett", "Walsh", "Malone", "Franklin", "Bishop", "Lane", "Doyle", "Chandler", "Sutton", "Sinclair", "Pratt", "Steele", "Benson", "Ramsey", "Harmon", "Holt", "Ford", "Greene", "Ramirez", "Henderson", "Watts", "Delaney", "Klein", "Fleming", "Acosta", "Travis", "Brady", "Wheeler", "McCoy", "Rowe", "Schwartz", "Finley", "Arias", "Dalton", "Mayer", "Carver", "Boone", "Bezos"
+last_names = [
+    "Schäler", "Khalifa", "Albakri", "Hosseini", "Hofmann", "Kondmann", "Memic", "Schneider", "Schmidt",
+    "Bennett", "Sullivan", "Carter", "Hayes", "Mitchell", "Brooks", "Reed", "Cooper", "Bryant", "Parker",
+    "Lawson", "Dean", "Ward", "Andrews", "Pierce", "Grant", "Palmer", "Blake", "Maxwell", "Rhodes",
+    "Foster", "Vaughn", "Jennings", "Barrett", "Walsh", "Malone", "Franklin", "Bishop", "Lane", "Doyle",
+    "Chandler", "Sutton", "Sinclair", "Pratt", "Steele", "Benson", "Ramsey", "Harmon", "Holt", "Ford",
+    "Greene", "Ramirez", "Henderson", "Watts", "Delaney", "Klein", "Fleming", "Acosta", "Travis", "Brady",
+    "Wheeler", "McCoy", "Rowe", "Schwartz", "Finley", "Arias", "Dalton", "Mayer", "Carver", "Boone", "Bezos",
+    "Rosales", "Nash", "Callahan", "Griffin", "Shepherd", "Madden", "Montoya", "Lang", "Hinton", "Crane",
+    "Salazar", "Gentry", "Knox", "Merritt", "Avery", "Glass", "Landry", "Pruitt", "Benton", "Forbes"
 ]
+
 
 all_ids = []
 def generate_unique_ids():
     global all_ids
-    all_ids = list(range(100000,1000000))
+    all_ids = list(range(100000, 1000000))
     shuffle(all_ids)
     
 generate_unique_ids()
 
-# Employee(ssnum,name,manager,dept,salary,numfriends)
-employee_table = [f"{all_ids.pop()}\tMartin Schäler\tN/A\tCEO\t1000000\t150"]
+# Employee(ssnum, name, manager, dept, salary, numfriends)
+employee_table = [f"{all_ids.pop()}\tMartin Schäler\tN/A\tCEO\t1000000\t150\n"]
 
-# Student(ssnum,name,course,grade)
+# Student(ssnum, name, course, grade)
 student_table = []
 
-# Techdept(dept,manager,location)
+# Techdept(dept, manager, location)
 tech_dept_table = []
 
 tech_dept = []
 tech_managers = []
 
-
-
 current_department = 0
 def make_manager():
+    global current_department
     manager_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
     manager_dept = departments[current_department]
     
@@ -96,85 +128,94 @@ def make_student_employee(manager, dept):
     )
 
 
-def make_student(id = None, name = None, course = None, grade = None):
+def make_student(id=None, name=None, course=None, grade=None):
     if (id is None or name is None or course is None or grade is None):
         student_id = all_ids.pop()
-        student_name = first_names[randint(0,len(first_names) - 1)] + " " + last_names[randint(0,len(last_names) - 1)]
-        student_course = courses[randint(0,len(courses) - 1)]
-        student_grade = round(random.uniform(1.0,4.0),1)
-        make_student_array(student_id,student_name,student_course,student_grade)
+        student_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+        student_course = courses[randint(0, len(courses) - 1)]
+        student_grade = round(random.uniform(1.0, 4.0), 1)
+        make_student_array(student_id, student_name, student_course, student_grade)
     else:
-        make_student_array(id,name,course,grade)
+        make_student_array(id, name, course, grade)
 
 
-def make_student_array(id,name,course,grade): # might be able to just remove this function
-    student_string = id + "\t" + name + "\t" + course + "\t" + grade
+def make_student_array(id, name, course, grade):
+    student_string = f"{id}\t{name}\t{course}\t{grade}"
     student_table.append(student_string + "\n")
 
 def make_techdept():
     for i in range(len(tech_dept)):
-        tech_dept_string = tech_dept[i] + "\t" + tech_managers[i] + "\t" + location[randint(0,2)]
+        tech_dept_string = tech_dept[i] + "\t" + tech_managers[i] + "\t" + location[randint(0, 2)]
         tech_dept_table.append(tech_dept_string + "\n")
 
 
-
-
-# ssnum, name firstname[random(i)] lastname[random], manager 
-# for a unique id 6 digits should be enough for 200k people
 def generate_record():
+    global current_department
     current_department = 0
     manager_name, manager_dept = make_manager()
     tech_managers.append(manager_name)
     tech_dept.append(manager_dept)
-    employees_without_managers = number_of_employees # We can just skip the index after making the manager so we do employee += 1 I think
     non_tech_employees = number_of_employees - number_of_tech_employees
     non_tech_dept_size = int(non_tech_employees / (len(departments) - 10))
     for employee in range(number_of_tech_employees):
-        if (employee % 1000 == 0 and employee != 0): # I can change this condition if I want a manager to be the manager for two dept for example
-                    current_department += 1
-                    manager_name, manager_dept = make_manager() # everytime a manager is made we need to put the manager name in an array and with the dept name
-                    tech_managers.append(manager_name)
-                    tech_dept.append(manager_dept)
-        if (employee % 20 == 0 and employee < number_of_worker_students ): # for every 20 employees we get a student employee
+        if (employee % 1000 == 0 and employee != 0):
+            current_department += 1
+            manager_name, manager_dept = make_manager()
+            tech_managers.append(manager_name)
+            tech_dept.append(manager_dept)
+        if (employee % 20 == 0 and employee < number_of_worker_students):
             make_student_employee(manager_name, manager_dept)
             continue
         make_employee(manager_name, manager_dept)
     for employee in range(non_tech_employees):
         if (employee % non_tech_dept_size == 0):
-            manager_name, manager_dept = make_manager()  # everytime a manager is made we need to put the manager name in an array and with the dept name
+            manager_name, manager_dept = make_manager()
             current_department += 1
         if (employee % 20 == 0):
             make_student_employee(manager_name, manager_dept)
             continue
         make_employee(manager_name, manager_dept)
     
-    for student in range(number_of_students - (number_of_students * 0.05)):
+    for student in range(int(number_of_students - (number_of_students * 0.05))):
         make_student()
-
-make_techdept()
-
 
 
 def generate_tsv_file():
-    with open("employee.tsv", "w") as f:
+    with open("assignment-2/employee.tsv", "w") as f:
         f.writelines(employee_table)
-    with open("student.tsv", "w") as f:
+    with open("assignment-2/student.tsv", "w") as f:
         f.writelines(student_table)
-    with open("techdept.tsv", "w") as f:
+    with open("assignment-2/techdept.tsv", "w") as f:
         f.writelines(tech_dept_table)
 
+def bulk_insert_postgres(file_path, table_name,table_spec):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            copy_sql = f"COPY {table_name} {table_spec} FROM STDIN WITH (FORMAT TEXT, DELIMITER E'\t')"
+            cursor_postgres.copy_expert(copy_sql, f)
+        conn_postgres.commit()
+        print(f"Successfully inserted data into {table_spec} (PostgreSQL).")
+    except Exception as e:
+        print(f"⚠️ Error inserting into {table_spec} (PostgreSQL): {e}")
+        conn_postgres.rollback()
+
+
+def bulk_insert_mariadb(file_path, table_name , table_spec):
+    try:
+        load_data_sql = (f"LOAD DATA LOCAL INFILE '{}' INTO TABLE {table_name} "
+            "FIELDS TERMINATED BY '\t' "
+            "LINES TERMINATED BY '\n'".format(file_path, table_spec)
+        )
+        cursor_mariadb.execute(load_data_sql)
+        conn_mariadb.commit()
+        print(f"Successfully inserted data into {table_spec} (MariaDB).")
+    except Exception as e:
+        print(f"⚠️ Error inserting into {table_spec} with table name {table_name} (MariaDB): {e}")
+        conn_mariadb.rollback()
 
 
 if __name__ == "__main__":
     generate_record()
+    make_techdept()
     generate_tsv_file()
-    print(employee_table)
-    print("will wait 10 secs")
-    time.sleep(10)
-    print("waited 10 secs")
-    print(student_table)
-    time.sleep(10)
-    print("waited 10 secs")
-    print(tech_dept_table)
-
-        
+    bulk_insert_postgres(employee_tsv_path,)
