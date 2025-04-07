@@ -30,10 +30,10 @@ table_techdept_spec = "dept, manager, location"
 
 # Table creation
 table_employee_name = "Employee"
-table_employee_schema = "ssnum INT PRIMARY KEY, name VARCHAR(120), manager VARCHAR(120), dept VARCHAR(100), salary INT, numfriends INT"
+table_employee_schema = "ssnum INT PRIMARY KEY, name VARCHAR(120) UNIQUE, manager VARCHAR(120), dept VARCHAR(100), salary INT, numfriends INT"
 
 table_student_name = "Student"
-table_student_schema = "ssnum INT PRIMARY KEY, name VARCHAR(120), course VARCHAR(100), grade FLOAT"
+table_student_schema  = "ssnum INT PRIMARY KEY, name VARCHAR(120) UNIQUE, course VARCHAR(100), grade FLOAT"
 
 table_techdept_name = "Techdept"
 table_techdept_schema = "dept VARCHAR(100), manager VARCHAR(120), location VARCHAR(70)"
@@ -119,20 +119,32 @@ tech_managers = []
 current_department = 0
 def make_manager():
     global current_department
-    manager_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+    m_id = all_ids.pop()  # Use this unique ID for both the record and name
+    manager_name = (
+        first_names[randint(0, len(first_names) - 1)]
+        + " "
+        + last_names[randint(0, len(last_names) - 1)]
+        + " " + str(m_id)
+    )
     manager_dept = departments[current_department]
-    
-    manager_string = f"{all_ids.pop()}\t{manager_name}\tMartin Schäler\t{manager_dept}\t{randint(120000, 200000)}\t{randint(0, 5)}"
+    manager_string = f"{m_id}\t{manager_name}\tMartin Schäler\t{manager_dept}\t{randint(120000, 200000)}\t{randint(0, 5)}"
     employee_table.append(manager_string + "\n")
     
     return manager_name, manager_dept
+
+
 
 
 def make_employee(manager, dept, id=None, name=None, salary=None, numfriends=None):
     if id is None:
         id = all_ids.pop()
     if name is None:
-        name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+        name = (
+            first_names[randint(0, len(first_names) - 1)]
+            + " "
+            + last_names[randint(0, len(last_names) - 1)]
+            + " " + str(id)
+        )
     if salary is None:
         salary = randint(100000, 150000)
     if numfriends is None:
@@ -141,9 +153,15 @@ def make_employee(manager, dept, id=None, name=None, salary=None, numfriends=Non
     employee_string = f"{id}\t{name}\t{manager}\t{dept}\t{salary}\t{numfriends}"
     employee_table.append(employee_string + "\n")
 
+
 def make_student_employee(manager, dept):
     student_employee_id = all_ids.pop()
-    student_employee_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+    student_employee_name = (
+        first_names[randint(0, len(first_names) - 1)]
+        + " "
+        + last_names[randint(0, len(last_names) - 1)]
+        + " " + str(student_employee_id)
+    )
     student_employee_salary = randint(20000, 50000)
     student_employee_numfriends = randint(100, 150)
     student_employee_course = courses[randint(0, len(courses) - 1)]
@@ -166,15 +184,22 @@ def make_student_employee(manager, dept):
     )
 
 
+
 def make_student(id=None, name=None, course=None, grade=None):
-    if (id is None or name is None or course is None or grade is None):
+    if id is None or name is None or course is None or grade is None:
         student_id = all_ids.pop()
-        student_name = first_names[randint(0, len(first_names) - 1)] + " " + last_names[randint(0, len(last_names) - 1)]
+        student_name = (
+            first_names[randint(0, len(first_names) - 1)]
+            + " "
+            + last_names[randint(0, len(last_names) - 1)]
+            + " " + str(student_id)
+        )
         student_course = courses[randint(0, len(courses) - 1)]
         student_grade = round(random.uniform(1.0, 4.0), 1)
         make_student_array(student_id, student_name, student_course, student_grade)
     else:
         make_student_array(id, name, course, grade)
+
 
 
 def make_student_array(id, name, course, grade):
