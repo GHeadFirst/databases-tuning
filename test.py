@@ -33,7 +33,7 @@ cursor_postgres.execute("SELECT COUNT(*) FROM Employee;")
 row_count_employee_postgresql = cursor_postgres.fetchone()[0]  # Get the count result
 cursor_postgres.execute("SELECT COUNT(*) FROM Student;")
 row_count_student_postgresql = cursor_postgres.fetchone()[0]  # Get the count result
-cursor_postgres.execute("SELECT COUNT(*) FROM Student;")
+cursor_postgres.execute("SELECT COUNT(*) FROM Techdept;")
 row_count_techdept_postgresql = cursor_postgres.fetchone()[0]  # Get the count result
 
 
@@ -48,7 +48,7 @@ cursor_mariadb.execute("SELECT COUNT(*) FROM Employee;")
 row_count_employee_mariaDB = cursor_mariadb.fetchone()[0]  # Get the count result
 cursor_mariadb.execute("SELECT COUNT(*) FROM Student;")
 row_count_student_mariaDB = cursor_mariadb.fetchone()[0]  # Get the count result
-cursor_mariadb.execute("SELECT COUNT(*) FROM Student;")
+cursor_mariadb.execute("SELECT COUNT(*) FROM Techdept;")
 row_count_techdept_mariaDB = cursor_mariadb.fetchone()[0]  # Get the count result
 
 

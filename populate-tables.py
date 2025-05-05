@@ -239,7 +239,7 @@ def generate_record():
             continue
         make_employee(manager_name, manager_dept)
     
-    for student in range(int(number_of_students - (number_of_students * 0.05))):
+    for student in range(int(number_of_students)):
         make_student()
 
 
