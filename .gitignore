@@ -7,3 +7,4 @@ __pycache__/
 *.tsv
 *.pdf
 *.tex
+pyrightconfig.json
