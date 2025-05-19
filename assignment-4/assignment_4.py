@@ -276,21 +276,6 @@ def main():
 
     print(f"📈 Test complete - throughput: {throughput:.2f} queries/sec")
 
-    # First Index Setup First Query Type Btree and Point Query
-    drop_index(CONN, CURSOR, "idx_pubid")
-    create_index (CONN, CURSOR, PUBL_TABLE, "idx_pubid","btree", "pubID")
-    cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_pubid")
-    print("B+Tree index and clustered table on PubID created !")
-
-    query_template = "SELECT * FROM Publ WHERE pubID = %s"
-    throughput, time_elapsed = run_query_loop(CONN, CURSOR, query_template, pubid_values)
-
-    plan_output = get_explain_analyze(CONN, CURSOR, query_template, pubid_values[0])
-
-    log_test_result(MODE_LABELS['clustered_btree_in_pubid'], pubid_values, throughput, time_elapsed ,plan_output)
-
-    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
-
 
     # First Index Setup Second Query Type
     drop_index(CONN, CURSOR, "idx_booktitle")
