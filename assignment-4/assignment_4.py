@@ -1,3 +1,4 @@
+from os.path import isfile
 import sys
 import os
 import time
@@ -63,7 +64,7 @@ def create_index(conn, cursor, table_name, idx_name, type_of_index, column):
         raise ValueError(f"Table {table_name} in {cursor} doesn't exist (create_index function)")
 
     if not valid_index_type(type_of_index):
-        raise ValueError("Not a valid index type (create_index function)")
+        raise ValueError("Not a valid index type:{type_of_index} Exception error: {e} (create_index function)")
 
     # should probably check if column exists in table too
     try:
@@ -73,7 +74,7 @@ def create_index(conn, cursor, table_name, idx_name, type_of_index, column):
             cursor.execute(f"CREATE INDEX {idx_name} USING {type_of_index} ON {table_name}({column});")
 
     except Exception as e:    
-        raise ValueError(f"Invalid index type: {type_of_index}")
+        raise ValueError(f"Invalid index type: {type_of_index}. Exception error {e}")
     
     # should probably test if index is actually created
 
@@ -114,9 +115,18 @@ def run_query_loop(conn, cursor, query_template, values):
 
 def get_explain_analyze(conn, cursor, query_template, value):
     explain_query = "EXPLAIN ANALYZE " + query_template
-    cursor.execute(explain_query, (value,))
+
+    # Special case: if value is a list/tuple and query contains IN
+    if isinstance(value, (list, tuple)) and "IN %s" in query_template:
+        # Build a properly formatted IN clause manually
+        value_list = "', '".join(str(v) for v in value)
+        expanded_query = explain_query.replace("%s", f"('{value_list}')")
+        cursor.execute(expanded_query)
+    else:
+        cursor.execute(explain_query, (value,))
+    
     rows = cursor.fetchall()
-    return "\n".join(row[0] for row in rows)  # one string with the full plan
+    return "\n".join(row[0] for row in rows)
 
 def log_test_result(test_name, values_used, throughput, explain_output, filename="results.txt"):
     try:
@@ -126,7 +136,7 @@ def log_test_result(test_name, values_used, throughput, explain_output, filename
             f.write(f"Throughput: {throughput:.2f} queries/sec\n\n")
             f.write("Query Plan:\n")
             f.write(explain_output + "\n")
-            f.write("---\n")
+            f.write("----------------------------------------\n\n")
     except Exception as e:
         raise FileNotFoundError(
             f"File {filename} not found" 
@@ -164,8 +174,14 @@ def main():
     AUTH_FILE_PATH = "dblp/auth.tsv"
     PUBL_FILE_PATH = "dblp/publ.tsv"
 
+    # Delete results.txt if it exists (This is done to reset our test results)
+    if os.path.isfile("results.txt"):
+        open('results.txt', 'w').close()
+
+
 
     # First Index Setup Btree
+    print("==================================FIRST INDEX==================================")
 
     # We drop our tables
     drop_postgres()
@@ -283,6 +299,8 @@ def main():
 
     # Second Index Setup
 
+    print("==================================SECOND INDEX==================================")
+
     
     # Second Index Setup First Query Type
     drop_index(CONN, CURSOR, "idx_pubid")
@@ -365,6 +383,7 @@ def main():
     print(f"Test complete, throughput: {throughput:.2f} queries/sec")
 
     # Third Index Setup
+    print("==================================THIRD INDEX==================================")
     
     # Third Index Setup First Query Type
     drop_index(CONN, CURSOR, "idx_pubid")
@@ -453,6 +472,7 @@ def main():
 
 
     # Fourth Index Setup
+    print("==================================FOURTH INDEX==================================")
     CURSOR.execute("SET enable_indexscan = OFF;")
     CURSOR.execute("SET enable_bitmapscan = OFF;")
 
