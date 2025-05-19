@@ -179,7 +179,7 @@ def main():
     # We create our index and cluster our table
     column_name_setup_btree = "pubID"
 
-
+    
     create_index(CONN, CURSOR, PUBL_TABLE, "idx_pubid", "btree", column_name_setup_btree)
     cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_pubid")
 
@@ -200,47 +200,310 @@ def main():
     print(f"📈 Test complete - throughput: {throughput:.2f} queries/sec")
 
     # First Index Setup First Query Type Btree and Point Query
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_pubid","btree", "pubID")
+    cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_pubid")
+    print("B+Tree index and clustered table on PubID created !")
 
-    
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+    query_template = "SELECT * FROM Publ WHERE pubID = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, pubid_values)
+
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, pubid_values[0])
+
+    log_test_result("Clustering B+ Tree - Point Query on pubID", pubid_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
+
+
     # First Index Setup Second Query Type
+    drop_index(CONN, CURSOR, "idx_booktitle")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_booktitle", "btree", "booktitle")
+    cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_booktitle")
     
+    print("B+Tree index and clustered table on booktitle created !")
+
+    booktitle_values = sample_collector(CURSOR, PUBL_TABLE, "booktitle", limit=100)
+
+    query_template_booktitle = "SELECT * FROM Publ WHERE booktitle = %s"
+
+    throughput_booktitle = run_query_loop(CONN, CURSOR, query_template_booktitle, booktitle_values)
+    plan_output_booktitle = get_explain_analyze(CONN, CURSOR, query_template_booktitle, booktitle_values[0])
+
+    log_test_result("Table scan - Multipoint Query on booktitle", booktitle_values, throughput_booktitle, plan_output_booktitle)
+
+    print(f"Test complete (booktitle) - throughput: {throughput_booktitle:.2f} queries/sec")
+
+
     # First Index Setup Third Query Type
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_pubid", "btree", "pubID")
+    cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_pubid")
+    print("B+Tree index and clustered table on pubID created (for IN-query)!")
+
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+
+    grouped_values = [pubid_values[i:i+3] for i in range(0, len(pubid_values), 3) if len(pubid_values[i:i+3]) == 3]
+
+    query_template_IN = "SELECT * FROM Publ WHERE pubID IN %s"
+
+    def run_in_query_loop(conn, cursor, query_template, list_of_value_groups):
+        start = time.perf_counter()
+        for value_group in list_of_value_groups:
+            cursor.execute(query_template, (tuple(value_group),))
+            cursor.fetchall()
+        end = time.perf_counter()
+        elapsed = end - start
+        throughput = len(list_of_value_groups) / elapsed
+        return throughput
     
+    throughput_in = run_in_query_loop(CONN, CURSOR, query_template_IN, grouped_values)
+    plan_output_in = get_explain_analyze(CONN, CURSOR, query_template_IN, grouped_values[0])
+
+    log_test_result("Multipoint Query with IN on pubID (3 values)", grouped_values, throughput_in, plan_output_in)
+    print(f"📈 Test complete (pubID IN) - throughput: {throughput_in:.2f} queries/sec")
+
     # First Index Setup Fourth Query Type
+    drop_index(CONN, CURSOR, "idx_year")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_year", "btree", "year")
+    cluster_table(CONN, CURSOR, PUBL_TABLE, "idx_year")
+    print("B+Tree index and clustered table on year created !")
+
+    year_values = sample_collector(CURSOR, PUBL_TABLE, "year", limit=100)
+
+    query_template = "SELECT * FROM Publ WHERE year = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, year_values)
+
+
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, year_values[0])
+
+    log_test_result("Clustering B+ Tree - Point Query on year", year_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
 
     # Second Index Setup
-    
+
     
     # Second Index Setup First Query Type
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_pubid", "btree", "pubID")
+
+    print("B+Tree index and non-clustered table on PubID created !")
+
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+
+    query_template = "SELECT * FROM Publ WHERE pubID = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, pubid_values)
+
+    
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, pubid_values[0])
+
+    log_test_result("Non-Clustering B+ Tree - Point Query on pubID", pubid_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
 
     # Second Index Setup Second Query Type
+    drop_index(CONN, CURSOR, "idx_booktitle")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_booktitle", "btree", "booktitle")
+    
+    print("B+Tree index and non-clustered table on booktitle created !")
+
+    booktitle_values = sample_collector(CURSOR, PUBL_TABLE, "booktitle", limit=100)
+
+    query_template_booktitle = "SELECT * FROM Publ WHERE booktitle = %s"
+
+    throughput_booktitle = run_query_loop(CONN, CURSOR, query_template_booktitle, booktitle_values)
+    plan_output_booktitle = get_explain_analyze(CONN, CURSOR, query_template_booktitle, booktitle_values[0])
+
+    log_test_result("Non-Clustering B+ Tree - Multipoint Query on booktitle", booktitle_values, throughput_booktitle, plan_output_booktitle)
+
+    print(f"Test complete (booktitle) - throughput: {throughput_booktitle:.2f} queries/sec")
 
     # Second Index Setup Third Query Type
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_pubid", "btree", "pubID")
+    print("B+Tree index and non-clustered table on pubID created (for IN-query)!")
+
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+
+    grouped_values = [pubid_values[i:i+3] for i in range(0, len(pubid_values), 3) if len(pubid_values[i:i+3]) == 3]
+
+    query_template_IN = "SELECT * FROM Publ WHERE pubID IN %s"
+
+    #def run_in_query_loop(conn, cursor, query_template, list_of_value_groups):
+    #    start = time.perf_counter()
+    #    for value_group in list_of_value_groups:
+    #        cursor.execute(query_template, (tuple(value_group),))
+    #        cursor.fetchall()
+    #    end = time.perf_counter()
+    #    elapsed = end - start
+    #    throughput = len(list_of_value_groups) / elapsed
+    #    return throughput 
+    
+    throughput_in = run_in_query_loop(CONN, CURSOR, query_template_IN, grouped_values)
+    plan_output_in = get_explain_analyze(CONN, CURSOR, query_template_IN, grouped_values[0])
+
+
+    log_test_result("Multipoint Query with IN on pubID (3 values)", grouped_values, throughput_in, plan_output_in)
+    print(f" Test complete (pubID IN) - throughput: {throughput_in:.2f} queries/sec")
 
     # Second Index Setup Fourth Query Type
+    drop_index(CONN, CURSOR, "idx_year")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_year", "btree", "year")
+    print("B+Tree index and non-clustered table on year created !")
 
+    year_values = sample_collector(CURSOR, PUBL_TABLE, "year", limit=100)
+
+    query_template = "SELECT * FROM Publ WHERE year = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, year_values)
+
+    
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, year_values[0])
+
+    log_test_result("Non-Clustering B+ Tree - Point Query on year", year_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
 
     # Third Index Setup
-
+    
     # Third Index Setup First Query Type
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_pubid", "hash", "pubID")
+
+    print("Hash index and non-clustered table on PubID created !")
+
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+
+
+    query_template = "SELECT * FROM Publ WHERE pubID = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, pubid_values)
+
+    
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, pubid_values[0])
+
+    log_test_result("Non-Clustering Hashing - Point Query on pubID", pubid_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
+
+
 
     # Third Index Setup Second Query Type
+    drop_index(CONN, CURSOR, "idx_booktitle")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_booktitle", "hash", "booktitle")
+    
+    print("Hash index and non-clustered table on booktitle created !")
+
+    booktitle_values = sample_collector(CURSOR, PUBL_TABLE, "booktitle", limit=100)
+
+    query_template_booktitle = "SELECT * FROM Publ WHERE booktitle = %s"
+
+    throughput_booktitle = run_query_loop(CONN, CURSOR, query_template_booktitle, booktitle_values)
+    plan_output_booktitle = get_explain_analyze(CONN, CURSOR, query_template_booktitle, booktitle_values[0])
+
+    log_test_result("Non-Clustering Hash - Multipoint Query on booktitle", booktitle_values, throughput_booktitle, plan_output_booktitle)
+
+    print(f"Test complete (booktitle) - throughput: {throughput_booktitle:.2f} queries/sec")
+
 
     # Third Index Setup Third Query Type
+    drop_index(CONN, CURSOR, "idx_pubid")
+    create_index(CONN, CURSOR, PUBL_TABLE, "idx_pubid", "hash", "pubID")
+    print("Hash index and non-clustered table on pubID created (for IN-query)!")
+
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+
+    grouped_values = [pubid_values[i:i+3] for i in range(0, len(pubid_values), 3) if len(pubid_values[i:i+3]) == 3]
+
+    query_template_IN = "SELECT * FROM Publ WHERE pubID IN %s"
+
+    #def run_in_query_loop(conn, cursor, query_template, list_of_value_groups):
+    #    start = time.perf_counter()
+    #    for value_group in list_of_value_groups:
+    #        cursor.execute(query_template, (tuple(value_group),))
+    #        cursor.fetchall()
+    #    end = time.perf_counter()
+    #    elapsed = end - start
+    #    throughput = len(list_of_value_groups) / elapsed
+    #    return throughput 
+    
+    throughput_in = run_in_query_loop(CONN, CURSOR, query_template_IN, grouped_values)
+    plan_output_in = get_explain_analyze(CONN, CURSOR, query_template_IN, grouped_values[0])
+
+
+    log_test_result("Multipoint Query with IN on pubID (3 values)", grouped_values, throughput_in, plan_output_in)
+    print(f" Test complete (pubID IN) - throughput: {throughput_in:.2f} queries/sec")
+
+
 
     # Third Index Setup Fourth Query Type
+    drop_index(CONN, CURSOR, "idx_year")
+    create_index (CONN, CURSOR, PUBL_TABLE, "idx_year", "hash", "year")
+    print("Hash index and non-clustered table on year created !")
+
+    year_values = sample_collector(CURSOR, PUBL_TABLE, "year", limit=100)
+
+    query_template = "SELECT * FROM Publ WHERE year = %s"
+    throughput = run_query_loop(CONN, CURSOR, query_template, year_values)
+
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, year_values[0])
+
+    log_test_result("Non-Clustering Hashing - Point Query on year", year_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
+
 
     # Fourth Index Setup
+    CURSOR.execute("SET enable_indexscan = OFF;")
+    CURSOR.execute("SET enable_bitmapscan = OFF;")
+
+    #drop_index(CONN, CURSOR, "idx_pubid")
+    #drop_index(CONN, CURSOR, "idx_booktitle")
+    #drop_index(CONN, CURSOR, "idx_year")
+
 
     # Fourth Index Setup First Query Type
+    query_template = "SELECT * FROM Publ WHERE pubID = %s"
+    pubid_values = sample_collector(CURSOR, PUBL_TABLE, "pubID", limit=100)
+    throughput = run_query_loop(CONN, CURSOR, query_template, pubid_values)
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, pubid_values[0])
+    log_test_result("Table Scan - Point Query on pubID", pubid_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
+
+
 
     # Fourth Index Setup Second Query Type
+    query_template = "SELECT * FROM Publ WHERE booktitle = %s"
+    booktitle_values = sample_collector(CURSOR, PUBL_TABLE, "booktitle", limit=100)
+    throughput_booktitle = run_query_loop(CONN, CURSOR, query_template, booktitle_values)
+    plan_output_booktitle = get_explain_analyze(CONN, CURSOR, query_template, booktitle_values[0])
+    log_test_result("Table scan, Multipoint Query on booktitle", booktitle_values, throughput_booktitle, plan_output_booktitle)
+
+    print(f"Test complete (booktitle) - throughput: {throughput_booktitle:.2f} queries/sec")
+
 
     # Fourth Index Setup Third Query Type
+    query_template_IN = "SELECT * FROM Publ WHERE pubID IN %s"
+    grouped_values = [pubid_values[i:i+3] for i in range(0, len(pubid_values), 3) if len(pubid_values[i:i+3]) == 3]
+    throughput_in = run_in_query_loop(CONN, CURSOR, query_template_IN, grouped_values)
+    plan_output_in = get_explain_analyze(CONN, CURSOR, query_template_IN, grouped_values[0])
+    log_test_result("Table scan, Multipoint Query with IN on pubID (3 values)", grouped_values, throughput_in, plan_output_in)
+    print(f" Test complete (pubID IN) - throughput: {throughput_in:.2f} queries/sec")
+
 
     # Fourth Index Setup Fourth Query Type
+    query_template = "SELECT * FROM Publ WHERE year = %s"
+    year_values = sample_collector(CURSOR, PUBL_TABLE, "year", limit=100)
+    throughput = run_query_loop(CONN, CURSOR, query_template, year_values)
+    plan_output = get_explain_analyze(CONN, CURSOR, query_template, year_values[0])
+    log_test_result("Table scan, Point Query on year", year_values, throughput, plan_output)
+
+    print(f"Test complete, throughput: {throughput:.2f} queries/sec")
 
 
+
+    CURSOR.execute("SET enable_indexscan = ON;")
+    CURSOR.execute("SET enable_bitmapscan = ON;")
 
     
 
