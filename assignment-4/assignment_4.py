@@ -70,11 +70,14 @@ def create_index(conn, cursor, table_name, idx_name, type_of_index, column):
     try:
         if type_of_index == "btree":
             cursor.execute(f"CREATE INDEX {idx_name} ON {table_name}({column});")
+        elif type_of_index == "hash":
+            cursor.execute(f"CREATE INDEX {idx_name} ON {table_name} USING hash ({column});")
         else:
-            cursor.execute(f"CREATE INDEX {idx_name} USING {type_of_index} ON {table_name}({column});")
-
+            raise ValueError(f"Unsupported index type: {type_of_index}")
+        conn.commit()
     except Exception as e:    
         raise ValueError(f"Invalid index type: {type_of_index}. Exception error {e}")
+
     
     # should probably test if index is actually created
 
