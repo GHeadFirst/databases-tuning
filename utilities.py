@@ -1,6 +1,3 @@
-from db_connection import get_mariadb_connection, get_postgres_connection
-import time
-import os
 
 def get_db_type(conn):
     module = conn.__class__.__module__
@@ -10,6 +7,101 @@ def get_db_type(conn):
         return 'MariaDB/MySQL'
     else:
         return 'Unknown'
+
+def drop_postgres(conn,cursor):
+    """Drops (deletes) all tables in the public schema."""
+    cursor.execute("""
+        SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+    """)
+    tables = [row[0] for row in cursor.fetchall()]
+
+    if tables:
+        for table in tables:
+            cursor.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
+        conn.commit()
+        print(f"✅ PostgreSQL: Dropped tables {tables}")
+    else:
+        print("⚠️ No tables found in PostgreSQL.")
+    
+
+def drop_mariadb(conn,cursor):
+    """Drops (deletes) all tables in the current database."""
+    cursor.execute("""
+        SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE();
+    """)
+    tables = [row[0] for row in cursor.fetchall()]
+
+    if tables:
+        cursor.execute("SET FOREIGN_KEY_CHECKS=0;")
+        for table in tables:
+            cursor.execute(f"DROP TABLE IF EXISTS {table};")
+        cursor.execute("SET FOREIGN_KEY_CHECKS=1;")
+        conn.commit()
+        print(f"✅ MariaDB: Dropped tables {tables}")
+    else:
+        print("⚠️ No tables found in MariaDB.")
+    
+
+def clear_postgres(conn,cursor):
+
+    # Get existing tables
+    cursor.execute("""
+        SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+    """)
+    tables = [row[0] for row in cursor.fetchall()]
+
+    if tables:
+        cursor.execute(f"TRUNCATE TABLE {', '.join(tables)} RESTART IDENTITY CASCADE;")
+        conn.commit()
+        print(f"✅ PostgreSQL: Cleared tables {tables}")
+    else:
+        print("⚠️ No tables found in PostgreSQL.")
+
+    cursor.close()
+    conn.close()
+
+def clear_mariadb(conn,cursor):
+
+    # Get existing tables
+    cursor.execute("""
+        SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE();
+    """)
+    tables = [row[0] for row in cursor.fetchall()]
+
+    if tables:
+        cursor.execute("SET FOREIGN_KEY_CHECKS=0;")
+        for table in tables:
+            cursor.execute(f"TRUNCATE TABLE {table};")
+        cursor.execute("SET FOREIGN_KEY_CHECKS=1;")
+        conn.commit()
+        print(f"✅ MariaDB: Cleared tables {tables}")
+    else:
+        print("⚠️ No tables found in MariaDB.")
+
+    cursor.close()
+    conn.close()
+
+def drop_all_indexes(conn, cursor):
+    sql = """
+    DO $$
+    DECLARE
+        r RECORD;
+    BEGIN
+        FOR r IN (
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            AND tablename IN ('auth', 'publ')
+            AND indexname NOT LIKE '%_pkey'
+        ) LOOP
+            EXECUTE 'DROP INDEX IF EXISTS ' || quote_ident(r.indexname);
+        END LOOP;
+    END$$;
+    """
+    cursor.execute(sql)
+    conn.commit()
+
+
 
 def drop_index(conn, cursor, idx_name):
     cursor.execute(f"DROP INDEX IF EXISTS {idx_name};")
@@ -26,20 +118,27 @@ def create_table(conn, cursor, table_name, schema):
 
 
 def copy_expert(conn, cursor, table_name, column_names, delimiter, file_path):
-    if (get_db_type(conn) != 'PostgreSQL' ):
-      raise RuntimeError("Cannot use COPY expert on non-PostgreSQL databases.")
- 
+    if get_db_type(conn) != 'PostgreSQL':
+        raise RuntimeError("Cannot use COPY expert on non-PostgreSQL databases.")
+
     try:
-        with open(file_path, "r", encoding = "utf-8") as f:
-            cursor.copy_expert(f"Copy {table_name} ({column_names}) FROM STDIN WITH (FORMAT TEXT, DELIMITER E '{delimiter}')",f)
+        # Escape backslashes for PostgreSQL (e.g., '\t' → '\\t')
+        escaped_delim = delimiter.replace("\\", "\\\\")
+        sql = (
+            f"COPY {table_name} ({column_names}) "
+            f"FROM STDIN WITH (FORMAT TEXT, DELIMITER E'{escaped_delim}')"
+        )
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            cursor.copy_expert(sql, f)
+
         conn.commit()
         cursor.execute(f"ANALYZE {table_name};")
-        print(f"Successfully inserted data from {file_path} into {table_name} table \non columns {column_names}")
-        
-        print("✅ Inserted data successfully")
+        print(f"✅ Inserted data from {file_path} into '{table_name}' on columns {column_names}")
     except Exception as e:
-        print(f"⚠️ Error inserting into {table_name} from data {file_path} on {column_names}\nException Error :{e}")
+        print(f"⚠️ Error inserting into {table_name} from {file_path} on {column_names}:\n{e}")
         conn.rollback()
+
 
 def table_exists(cursor, table_name):
     cursor.execute(f"""
@@ -112,4 +211,9 @@ def sample_collector(cursor, table_name, column, limit=100):
         print(f"⚠️ Error collecting samples from {column} in {table_name}: {e}")
         cursor.connection.rollback()      # clear the aborted state
         return []
+
+
+def execute_query(conn,cursor, query):
+    cursor.execute(query)
+    conn.commit()
 
