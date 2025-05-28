@@ -16,6 +16,7 @@ def log_to_file(content, file_name="merge-log.txt"):
 
 def run_test_case(setup_number,conn,cursor,queries):
 # === Test: Clustered B+ Tree - Point Query on pubID ===
+    print(f"\n=============== Running Test Case {setup_number}: {SETUPS[setup_number]} ===============")
     log_to_file(f"\n=============== Running Test Case {setup_number}: {SETUPS[setup_number]} ===============")
 
     join = SETUPS[setup_number]["join"]
@@ -42,11 +43,15 @@ def run_test_case(setup_number,conn,cursor,queries):
 
     contents = f"=== Test Case:{setup_number} ===\n The following is being tested: {join} with index:{index}"
     conn.commit()
+    cursor.execute("ANALYZE publ;")
+    cursor.execute("ANALYZE auth;")
 
     for label, query in queries:
+        print(f"=== Query:{label} (Setup {setup_number}) ===")
         log_to_file(f"🧪 {label} (Setup {setup_number})")
         cursor.execute("EXPLAIN ANALYZE " + query)
         for row in cursor.fetchall():
+            print(row)
             log_to_file(row[0])
 
 
@@ -57,16 +62,19 @@ SETUPS = {
 1: {"join": "hash",   "index": "none"},
 2: {"join": "merge",  "index": "none"},
 3: {"join": "merge",  "index": "nonclust_both"},
-4: {"join": "merge",  "index": "clust_both"},
+4: {"join": "nested", "index": "nonclust_both"},
 5: {"join": "nested", "index": "nonclust_publ"},
 6: {"join": "nested", "index": "nonclust_auth"},
-7: {"join": "nested", "index": "nonclust_both"},
+7: {"join": "merge",  "index": "clust_both"},
 }
 
 
 
 def main():
     CONN, CURSOR = get_postgres_connection()
+
+    open("merge-log.txt", "w").close()
+        
 
     # Edit the name of your tables and paths and column names here,
     # maybe I should just make into an array where 1 = name, 2 schema and so on
@@ -104,15 +112,7 @@ def main():
     QUERY_1 = "SELECT name , title FROM Auth , Publ WHERE Auth . pubID = Publ . pubID;"
     QUERY_2 = "SELECT title FROM Auth , Publ WHERE Auth . pubID = Publ . pubID AND Auth . name = ’ Divesh Srivastava ’"
 
-    for setup in SETUPS:
-        if (SETUPS[setup]["index"] == "clust_both"):
-            utilities.drop_postgres(CONN,CURSOR)
-            utilities.create_table(CONN,CURSOR, AUTH_TABLE, AUTH_SCHEMA)
-            utilities.create_table(CONN,CURSOR, PUBL_TABLE, PUBL_SCHEMA)
-            
-            utilities.copy_expert(CONN,CURSOR,PUBL_TABLE, PUBL_COLUMNS,"\t",PUBL_FILE_PATH)
-            utilities.copy_expert(CONN,CURSOR,AUTH_TABLE, AUTH_COLUMNS,"\t",AUTH_FILE_PATH)
-            
+    for setup in SETUPS: 
         run_test_case(setup,CONN,CURSOR,QUERIES)
     
     
